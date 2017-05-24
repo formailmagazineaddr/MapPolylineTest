@@ -1,4 +1,4 @@
-package com.example.user.fusedlocationtest;
+package com.example.user.locationmaptest;
 
 //package com.example.user.maptest;
 import android.content.Intent;

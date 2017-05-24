@@ -1,4 +1,4 @@
-package com.example.user.fusedlocationtest;
+package com.example.user.locationmaptest;
 
 import android.Manifest;
 import android.app.Activity;
@@ -33,7 +33,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
-import com.example.user.fusedlocationtest.databinding.ActivityMainBinding;
+import com.example.user.locationmaptest.databinding.ActivityMainBinding;
 
 import java.text.DateFormat;
 import java.util.Date;
