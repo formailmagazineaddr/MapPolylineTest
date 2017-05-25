@@ -1,8 +1,6 @@
 package com.example.user.locationmaptest;
 
-//package com.example.user.maptest;
 import android.content.Intent;
-import android.location.Location;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -13,15 +11,18 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-
 import com.google.android.gms.maps.GoogleMap.OnMapClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
+import com.google.android.gms.maps.model.Marker;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private LatLng iamhere;
     private float zoomLevel = 10.0F;
+    private double latitude;
+    private double longitude;
+    Marker marker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,25 +48,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        //get the lat and lon from the previous activity
-        Intent intent = getIntent();
-        double latitude = intent.getDoubleExtra("currentLat", 0);
-        double longitude = intent.getDoubleExtra("currentLon", 0);
+        getLatLngFromPreActivity(); //get the lat and lon from the previous activity
 
         //add marker
         iamhere = new LatLng(latitude, longitude);
-        mMap.addMarker(new MarkerOptions().position(iamhere).title("I am here"));
+//        mMap.addMarker(new MarkerOptions().position(iamhere).title("I am here"));
+//        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(iamhere, zoomLevel));
+        marker = mMap.addMarker(new MarkerOptions().position(iamhere));
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(iamhere, zoomLevel));
 
         // タップした時のリスナーをセット
         mMap.setOnMapClickListener(new OnMapClickListener() {
             @Override
             public void onMapClick(LatLng tapLocation) {
+                marker.remove();
                 // tapされた位置の緯度経度
                 iamhere = new LatLng(tapLocation.latitude, tapLocation.longitude);
-                mMap.addMarker(new MarkerOptions().position(iamhere).title(""+tapLocation.latitude+" :"+ tapLocation.longitude));
+//                mMap.addMarker(new MarkerOptions().position(iamhere).title(""+tapLocation.latitude+" :"+ tapLocation.longitude));
+                marker = mMap.addMarker(new MarkerOptions().position(iamhere));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(iamhere, zoomLevel));
-
             }
         });
 
@@ -86,6 +87,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void delegateButtonHandler(View view) {
         Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);
+    }
+
+    private void getLatLngFromPreActivity() {
+        Intent intent = getIntent();
+        latitude = intent.getDoubleExtra("currentLat", 0);
+        longitude = intent.getDoubleExtra("currentLon", 0);
     }
 
 }
