@@ -3,6 +3,8 @@ package com.example.user.locationmaptest;
 import android.content.Intent;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.SystemClock;
 import android.view.View;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -14,14 +16,23 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.GoogleMap.OnMapClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
 import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
+
+import com.google.android.gms.maps.Projection;
+import android.view.animation.Interpolator;
+import android.graphics.Point;
+import android.view.animation.LinearInterpolator;
+
+import android.widget.Toast;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    private LatLng iamhere;
+    private LatLng location;
     private float zoomLevel = 10.0F;
     private double latitude;
     private double longitude;
+    private String markerId;
     Marker marker;
 
     @Override
@@ -51,32 +62,43 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         getLatLngFromPreActivity(); //get the lat and lon from the previous activity
 
         //add marker
-        iamhere = new LatLng(latitude, longitude);
-//        mMap.addMarker(new MarkerOptions().position(iamhere).title("I am here"));
-//        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(iamhere, zoomLevel));
-        marker = mMap.addMarker(new MarkerOptions().position(iamhere));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(iamhere, zoomLevel));
+        location = new LatLng(latitude, longitude);
+        marker = mMap.addMarker(new MarkerOptions()
+                .position(location)
+                .title(markerId)
+                .snippet("Lat,Lng="+location.latitude+","+location.longitude));
+        markerId = marker.getId();
+        Toast.makeText(getApplicationContext(), markerId, Toast.LENGTH_LONG).show();
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, zoomLevel));
 
         // タップした時のリスナーをセット
         mMap.setOnMapClickListener(new OnMapClickListener() {
             @Override
-            public void onMapClick(LatLng tapLocation) {
-                marker.remove();
-                // tapされた位置の緯度経度
-                iamhere = new LatLng(tapLocation.latitude, tapLocation.longitude);
-//                mMap.addMarker(new MarkerOptions().position(iamhere).title(""+tapLocation.latitude+" :"+ tapLocation.longitude));
-                marker = mMap.addMarker(new MarkerOptions().position(iamhere));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(iamhere, zoomLevel));
+            public void onMapClick(LatLng clickLocation) {
+                marker = mMap.addMarker(new MarkerOptions()
+                        .position(clickLocation)
+                        .title(markerId)
+                        .snippet("Lat,Lng="+clickLocation.latitude+","+clickLocation.longitude));
+                markerId = marker.getId();
+                Toast.makeText(getApplicationContext(), markerId, Toast.LENGTH_LONG).show();
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(clickLocation, zoomLevel));
             }
         });
 
         // 長押しのリスナーをセット
         mMap.setOnMapLongClickListener(new OnMapLongClickListener() {
             @Override
-            public void onMapLongClick(LatLng longpushLocation) {
-                LatLng newlocation = new LatLng(longpushLocation.latitude, longpushLocation.longitude);
-                mMap.addMarker(new MarkerOptions().position(newlocation).title(""+longpushLocation.latitude+" :"+ longpushLocation.longitude));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(newlocation, zoomLevel));
+            public void onMapLongClick(LatLng longClickLocation) {
+                animateMarker(marker, longClickLocation, false);
+            }
+        });
+
+        // action when marker clicked
+        mMap.setOnMarkerClickListener(new OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker clickedMarker) {
+                clickedMarker.remove();
+                return true;
             }
         });
     }
@@ -95,4 +117,40 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         longitude = intent.getDoubleExtra("currentLon", 0);
     }
 
+    public void animateMarker(final Marker marker, final LatLng toPosition,
+                              final boolean hideMarker) {
+        final Handler handler = new Handler();
+        final long start = SystemClock.uptimeMillis();
+        Projection proj = mMap.getProjection();
+        Point startPoint = proj.toScreenLocation(marker.getPosition());
+        final LatLng startLatLng = proj.fromScreenLocation(startPoint);
+        final long duration = 500;
+
+        final Interpolator interpolator = new LinearInterpolator();
+
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                long elapsed = SystemClock.uptimeMillis() - start;
+                float t = interpolator.getInterpolation((float) elapsed
+                        / duration);
+                double lng = t * toPosition.longitude + (1 - t)
+                        * startLatLng.longitude;
+                double lat = t * toPosition.latitude + (1 - t)
+                        * startLatLng.latitude;
+                marker.setPosition(new LatLng(lat, lng));
+
+                if (t < 1.0) {
+                    // Post again 16ms later.
+                    handler.postDelayed(this, 16);
+                } else {
+                    if (hideMarker) {
+                        marker.setVisible(false);
+                    } else {
+                        marker.setVisible(true);
+                    }
+                }
+            }
+        });
+    }
 }
